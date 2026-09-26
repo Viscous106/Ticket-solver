@@ -71,7 +71,7 @@ Full wording is in [BEAT-SHEET.md](./BEAT-SHEET.md). The short form:
 |---|---|---|
 | 0:00 | Restaurant | "The waiter reads the order back. You say yes." |
 | 0:20 | Why it never mattered | "Software retrying sends the identical thing. An agent re-derives." |
-| 0:40 | The harness | "Three tools. Only one moves money. That's the only one shielded." |
+| 0:40 | The harness | "Three tools. Only one writes. That's the only one shielded." |
 | 1:05 | Agent works | "Reads the claim, computes in the sandbox, prepares it. Preparing can't move money." |
 | 1:40 | The yes | "That pause is the only reason this works." (Approve once) |
 | 2:15 | The retry | "One row. Not two. Same receipt." |

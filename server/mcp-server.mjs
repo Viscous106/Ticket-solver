@@ -1,6 +1,6 @@
 // MCP server over Streamable HTTP for TrueForge to connect to.
 //
-// Three tools, split so that the shielded one is the one that moves money:
+// Three tools, split so that the shielded one is the one that writes:
 //
 //   get_claim              read-only. No approval.
 //   prepare_resubmission   mints a server-side operation_id and records a
@@ -80,7 +80,7 @@ function buildMcpServer() {
     }
   );
 
-  // THE SHIELDED TOOL. This is the one that moves money, so this is the one
+  // THE SHIELDED TOOL. This is the only one that writes, so this is the one
   // require_approval_for_tools gates. TrueForge pauses the turn here and shows
   // the reviewer the exact operation_id and payload. When the call is released,
   // the payer re-hashes the payload and refuses anything that no longer matches
@@ -89,7 +89,8 @@ function buildMcpServer() {
     {
       title: 'Submit corrected claim',
       description:
-        'Commit a prepared resubmission to the payer. WRITE - moves money. Requires ' +
+        'Commit a prepared resubmission to the payer. WRITE - the only tool that ' +
+        'changes stored state. Requires ' +
         'human approval. The payer verifies the payload still matches the hash recorded ' +
         'at prepare time; a changed amount is rejected, and an identical retry returns ' +
         'the original receipt instead of writing a second row.',
@@ -128,10 +129,14 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // Plain HTTP endpoints outside the MCP tool surface - these stand in for
-  // "the human's approval action" and "the actual commit." A real event
-  // would wire these behind TrueForge's own approval webhook; for the demo
-  // they're called directly after the reviewer clicks Approve in the UI.
+  // Plain HTTP endpoints outside the MCP tool surface, used by the
+  // deterministic tests so the four scenarios can be exercised without
+  // driving the UI. TrueForge itself does not call these: it surfaces
+  // tool.approval_required and then resumes the paused call in a new turn
+  // carrying user.tool_approval. There is no approval webhook.
+  //
+  // These are unauthenticated, which is fine for a local demo and would not
+  // be in production - see "Honest boundaries" in the README.
   if (url.pathname === '/approve' && req.method === 'POST') {
     const body = await readJson(req);
     const result = ledger.approve(body.operation_id);

@@ -5,12 +5,21 @@ That is so you get what you agreed to, not what he remembers on the second
 trip to the kitchen.
 
 Software never needed that. A computer retrying a payment sends the identical
-bytes every time, so approval could be a yes-or-no button and nothing was
-lost. **An agent does not replay. It re-derives.** It can come back with a
-different number, holding your approval, and be entirely sincere that it is
-the same request.
+bytes every time. **An agent does not replay. It re-derives** — and can come
+back with a different number, entirely sincere that it is the same request.
 
-So the yes has to become specific. Not *yes, go ahead*. **Yes — to this.**
+TrueForge handles the first half of this properly: every call to a shielded
+tool pauses, including the retry. Two attempts means two pauses. The harness
+does not hand out a reusable permission.
+
+What no approval UI can do is remember. Each yes is judged on its own. A
+human approving a stream of near-identical pauses has no way to see that this
+operation was already settled, or that the amount moved between the first
+pause and the second. **The approvals are individually correct and
+collectively blind.**
+
+So the yes has to carry what it approved. Not *yes, go ahead*. **Yes — to
+this.**
 
 An agent may prepare a $75,377 claim correction on its own. It may not commit
 one on its own. Committing takes two things: a human decision, and a payload
@@ -42,13 +51,26 @@ payload* under the *right key*.
 Nothing is broken here. The assumption was quietly invalidated by a new kind
 of client.
 
-The same gap shows up in the approval itself. A reviewer sees the arguments on
-screen, but an allow/deny decision records only that the call was permitted —
-not what it contained. With a deterministic client that gap is harmless,
-because the arguments cannot change between approval and execution. With an
-agent it is the entire problem.
+### What TrueForge already does, and what it cannot
 
-So approval here binds two things that must both hold:
+To be precise, because this is the part that is easy to overstate:
+
+TrueForge's approval references **one specific pending tool call**. It is not
+a permission the agent keeps. A retry is a new tool call, so it raises its own
+`tool.approval_required` and pauses again. Verified in a live session: two
+submit attempts produced two separate pauses with different tool call ids.
+
+So the agent cannot smuggle a changed payload past an old approval. The
+harness is doing its job.
+
+What the harness cannot do is **relate one approval to another**. Each
+decision is allow or deny on the call in front of you, and it records only
+that the call was permitted — not what it contained, and not whether the same
+operation was already approved and settled a minute ago. Every yes is correct
+in isolation. Nothing compares them.
+
+That is the gap this repository closes, and it is a narrower claim than
+"approval is broken." Approval here binds two things that must both hold:
 
 1. an `operation_id` the model cannot mint (server-generated), and
 2. a SHA-256 hash of the exact payload that was prepared.
@@ -59,14 +81,30 @@ fails the hash check even though the operation id is correct.
 ### Before and after
 
 ```
-before                                  after
-------                                  -----
-agent: send $75,377                     agent: prepare $75,377
-human: APPROVE      (approves the act)  human: APPROVE   (approves this payload)
-agent: [timeout, retries]               agent: [timeout, retries]
-agent: send $95,000 (re-derived)        agent: send $95,000
-system: approved -> PAYS $95,000        system: hash mismatch -> REFUSED
+before                                   after
+------                                   -----
+agent: prepare $75,377                   agent: prepare $75,377
+human: APPROVE  (pause 1)                human: APPROVE  (pause 1)
+        -> committed, receipt R1                 -> committed, receipt R1
+
+[acknowledgement lost]                   [acknowledgement lost]
+
+agent: retry                             agent: retry
+human: APPROVE  (pause 2, looks          human: APPROVE  (pause 2, same)
+        identical, no memory of R1)
+        -> SECOND ledger row                     -> payer sees the operation
+                                                    already settled
+                                                 -> replays R1, ONE row
+
+agent: retry, re-derived as $95,000      agent: retry, re-derived as $95,000
+human: APPROVE  (pause 3 - a tired       human: APPROVE  (pause 3 - same
+        reviewer sees another                     tired reviewer, same click)
+        near-identical card)                   -> hash mismatch, REFUSED
+        -> PAYS $95,000
 ```
+
+TrueForge raises all three pauses in both columns. The difference is whether
+anything downstream remembers what the earlier ones decided.
 
 ## What TrueForge does, and what this repo does
 
@@ -96,7 +134,7 @@ without that pause there is no moment to bind anything to.
 | `prepare_resubmission` | no — mints `operation_id` + hash | no |
 | `submit_claim` | **yes — commits to the ledger** | **yes** |
 
-The shield is on the tool that moves money.
+The shield is on the tool that writes.
 
 ## Behaviour
 
@@ -153,11 +191,22 @@ Ask the agent:
 
 ## Honest boundaries
 
-- The payer is a mock. It has no adjudication logic and makes no claim to be
-  a production claims engine.
-- TrueForge 0.2.0 does not bind approvals to argument values. This repo does
-  not imply otherwise.
-- In production the payer would also authenticate its caller. It does not here.
+Written out because a demo that overstates itself is worse than a smaller one
+that does not.
+
+- **The payer is a mock.** It has no adjudication logic. The fixture supplies
+  the corrected amount; the agent does not derive it from clinical rules, and
+  nothing here is a production claims engine.
+- **The ledger is local SQLite.** Committing writes a row. No money moves.
+- **TrueForge does pause every shielded call, including retries.** It does not
+  hand out reusable permissions, and this repo does not claim it does. What it
+  does not do is relate one approval to another — that is the gap being closed.
+- **TrueForge's approval is not cryptographically bound to arguments.** The
+  binding is enforced here, in the payer, at commit time.
+- **The HTTP endpoints are unauthenticated and the MCP handler records its own
+  approval.** Anything that can reach the port can call them. In production
+  the payer would authenticate its caller and accept an approval only from the
+  harness. That is not built here.
 - Nothing in this repository constitutes medical, billing, or legal advice.
 
 ## Licence

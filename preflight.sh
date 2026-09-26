@@ -33,25 +33,40 @@ for t in get_claim prepare_resubmission submit_claim; do
   if echo "$TOOLS" | grep -q "\"$t\""; then ok "tool: $t"; else bad "tool MISSING: $t"; fi
 done
 
-# 3. TrueForge up
-if curl -sf -m 3 http://localhost:8790/api/v1/capabilities >/dev/null 2>&1; then
+# 3+4. TrueForge up, and sandbox enabled. ONE request, reused - this process
+#      has been OOM-killed under memory pressure, so do not poll it harder
+#      than necessary.
+CAPS=$(curl -s -m 3 http://localhost:8790/api/v1/capabilities 2>/dev/null)
+if [ -n "$CAPS" ]; then
   ok "TrueForge on :8790"
+  if echo "$CAPS" | grep -q '"sandbox":{"enabled":true}'; then
+    ok "sandbox enabled"
+  else
+    bad "sandbox NOT enabled"
+  fi
 else
   bad "TrueForge NOT reachable - run: npx @truefoundry/trueforge@latest"
+  bad "sandbox unknown (TrueForge down)"
 fi
 
-# 4. Sandbox enabled (a scored capability; silently off = a beat disappears)
-if curl -s -m 3 http://localhost:8790/api/v1/capabilities 2>/dev/null | grep -q '"sandbox":{"enabled":true}'; then
-  ok "sandbox enabled"
-else
-  bad "sandbox NOT enabled"
+# 5. TrueForge can see our connector. Skipped when TrueForge is down, so the
+#    output names one real problem instead of three symptoms of it.
+if [ -n "$CAPS" ]; then
+  if curl -sf -m 5 http://localhost:8790/api/v1/mcp-servers/two-key-claims/tools >/dev/null 2>&1; then
+    ok "connector registered in TrueForge"
+  else
+    bad "connector NOT registered - see AGENT-SETUP.md step 1"
+  fi
 fi
 
-# 5. TrueForge can see our connector
-if curl -sf -m 5 http://localhost:8790/api/v1/mcp-servers/two-key-claims/tools >/dev/null 2>&1; then
-  ok "connector registered in TrueForge"
+# 5b. Memory headroom. TrueForge has been OOM-killed three times today with
+#     swap above 95%. A take that dies at 2:30 costs more than this check.
+SWAP=$(sysctl -n vm.swapusage 2>/dev/null)
+FREE_M=$(echo "$SWAP" | sed -n 's/.*free = \([0-9.]*\)M.*/\1/p' | cut -d. -f1)
+if [ -n "$FREE_M" ] && [ "$FREE_M" -lt 2000 ] 2>/dev/null; then
+  bad "only ${FREE_M}M swap free - close other apps before recording"
 else
-  bad "connector NOT registered - see AGENT-SETUP.md step 1"
+  ok "memory headroom (${FREE_M:-?}M swap free)"
 fi
 
 # 6. Tests green
