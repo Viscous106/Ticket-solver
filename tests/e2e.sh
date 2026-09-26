@@ -76,12 +76,27 @@ echo "$R4" | grep -q 'cannot_submit_from_status_denied' && pass "denied op block
 
 echo
 echo "== ledger state: these four scenarios wrote exactly ONE row =="
+
+# This assertion opens the SQLite file directly, so it only works where the
+# file is - on the same machine as the server. Against a deployed BASE the four
+# scenarios above are the proof; run the row check on the instance itself
+# (deploy/README.md shows the one-liner).
+case "$BASE" in
+  http://localhost*|http://127.0.0.1*) ;;
+  *)
+    echo "  SKIP: ledger-file assertion - BASE is remote, run it on the instance"
+    echo
+    echo "ALL SCENARIOS PASSED (four over HTTP; row check skipped)"
+    exit 0
+    ;;
+esac
+
 # Scoped to the operations THIS run created, not to the whole table. A global
 # count would fail whenever the ledger already holds a row from a live demo,
 # which says nothing about whether these scenarios behaved correctly.
 node -e "
 const Database = require('better-sqlite3');
-const db = new Database('./ledger.sqlite', { readonly: true });
+const db = new Database(process.env.LEDGER_DB || './ledger.sqlite', { readonly: true });
 const mine = ['$OP', '$OP2', '$OP3'];
 const q = mine.map(() => '?').join(',');
 const rows = db.prepare('SELECT operation_id, claim_id, amount, receipt_id FROM ledger WHERE operation_id IN (' + q + ')').all(...mine);

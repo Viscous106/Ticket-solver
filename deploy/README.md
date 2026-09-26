@@ -68,8 +68,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST "https://$SITE/commit" -d '{}'
 That second one must print **401**. Run it *before* you export the token, or
 it passes for the wrong reason.
 
-Then the real check — the existing four-scenario suite against the deployed
-host:
+Then the four-scenario suite against the deployed host:
 
 ```bash
 aws ssm start-session --target <instance-id>   # then: sudo cat /etc/ticket-solver/env
@@ -77,6 +76,25 @@ export ADMIN_TOKEN=<value from that file>
 
 BASE="https://$SITE" ./tests/e2e.sh
 ```
+
+Against a remote `BASE` the suite runs all four scenarios over HTTP and then
+**skips its final assertion**, reporting
+`ALL SCENARIOS PASSED (four over HTTP; row check skipped)`. That last step opens
+the SQLite file directly, so it only works where the file is. Run its equivalent
+on the instance:
+
+```bash
+aws ssm start-session --target <instance-id>
+sudo docker exec ticket-solver node -e "
+const D = require('better-sqlite3');
+const db = new D('/data/ledger.sqlite', { readonly: true });
+console.log('ledger rows:', db.prepare('SELECT COUNT(*) n FROM ledger').get().n);
+console.log(db.prepare('SELECT status, COUNT(*) n FROM operations GROUP BY status').all());
+"
+```
+
+After one clean e2e run that should report **1 ledger row** and three
+operations — one `committed`, one `approved`, one `denied`.
 
 And confirm local behaviour is unchanged:
 

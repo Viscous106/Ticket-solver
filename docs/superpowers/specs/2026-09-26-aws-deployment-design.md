@@ -232,6 +232,13 @@ The 401 check must run **before** exporting the token, or it passes for the
 wrong reason. Run the suite locally too (`./tests/e2e.sh` with both variables
 unset) to confirm the changes did not alter local behaviour.
 
+`e2e.sh` ends with an assertion that opens `ledger.sqlite` directly, which
+cannot work across a network. Against a remote `BASE` it skips that step and
+says so; the row check is then run on the instance with `docker exec`, as
+documented in `deploy/README.md`. The same assertion also hardcoded
+`./ledger.sqlite`, ignoring `LEDGER_DB`; it now honours the variable, so the
+suite can run against a server whose ledger lives anywhere.
+
 Then register the connector in TrueForge against `$HOST/mcp` and confirm
 `submit_claim` still raises `tool.approval_required`.
 
