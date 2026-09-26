@@ -69,19 +69,32 @@ fi
 #     four stuck editor extension hosts pegged a core each (two for 16 days)
 #     and took the load average to 82, which is what kept killing TrueForge.
 #     So check load first - it is the signal that actually predicted failure.
+# Load alone is a bad signal right after a reboot, when Spotlight and
+# Gatekeeper reindex and briefly push it into the 20s-40s. That settles on
+# its own. What actually matters is whether one of YOUR processes is stuck.
 LOAD=$(uptime | sed -n 's/.*load averages*: *\([0-9.]*\).*/\1/p' | cut -d. -f1)
-if [ -n "$LOAD" ] && [ "$LOAD" -gt 25 ] 2>/dev/null; then
-  bad "load average ${LOAD} - something is pegging the CPU, find it before recording"
+STUCK=$(ps aux | awk '$3 > 80 && $11 !~ /CoreServices|CoreDuet|syspolicyd|mds|Spotlight|backupd/ {print $2}' | head -3)
+if [ -n "$STUCK" ]; then
+  bad "process(es) pegged at >80% CPU: $STUCK - investigate before recording"
+elif [ -n "$LOAD" ] && [ "$LOAD" -gt 60 ] 2>/dev/null; then
+  bad "load ${LOAD} is very high even for indexing - wait a few minutes"
 else
-  ok "system load (${LOAD:-?})"
+  ok "system load (${LOAD:-?}${LOAD:+, nothing of yours pegged})"
 fi
 
-SWAP=$(sysctl -n vm.swapusage 2>/dev/null)
-FREE_M=$(echo "$SWAP" | sed -n 's/.*free = \([0-9.]*\)M.*/\1/p' | cut -d. -f1)
-if [ -n "$FREE_M" ] && [ "$FREE_M" -lt 500 ] 2>/dev/null; then
-  bad "only ${FREE_M}M swap free - close apps before recording"
+# Measure REAL free RAM, not swap. Right after a reboot swap is 0M total,
+# which is the healthiest possible state but reads as "0M free" if you look
+# at the wrong number. Free pages plus reclaimable inactive pages is what
+# actually determines whether a burst allocation - like the sandbox spawn -
+# can be satisfied.
+AVAIL_M=$(vm_stat 2>/dev/null | awk '
+/Pages free/     {gsub(/\./,"",$3); f=$3}
+/Pages inactive/ {gsub(/\./,"",$3); i=$3}
+END{printf "%.0f", (f+i)*16384/1048576}')
+if [ -n "$AVAIL_M" ] && [ "$AVAIL_M" -lt 1500 ] 2>/dev/null; then
+  bad "only ${AVAIL_M}MB RAM available - close apps before recording"
 else
-  ok "memory headroom (${FREE_M:-?}M swap free)"
+  ok "memory headroom (${AVAIL_M:-?}MB available)"
 fi
 
 # 6. Tests green
