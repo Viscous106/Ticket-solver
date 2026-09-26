@@ -13,8 +13,8 @@ TrueForge runs on `localhost:8790` and reaches the payer over loopback today, an
 adding a network hop introduces failure modes a local demo does not have. The
 reasons to deploy anyway are (a) spending the provided credits, (b) giving
 teammates and judges a URL they can hit, (c) taking the laptop out of the
-critical path — TrueForge OOM-killed itself five times on
-this machine.
+critical path — TrueForge OOM-killed itself five times on this machine during
+the build.
 
 Success criteria:
 

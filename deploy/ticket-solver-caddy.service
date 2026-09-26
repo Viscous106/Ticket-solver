@@ -1,0 +1,25 @@
+[Unit]
+Description=Caddy TLS front for Ticket-solver
+After=docker.service ticket-solver.service
+Requires=docker.service
+
+[Service]
+EnvironmentFile=/etc/ticket-solver/env
+Restart=always
+RestartSec=5
+
+# caddy_data is a named volume so issued certificates survive a restart.
+# Let's Encrypt rate-limits 5 duplicate certs per week; without this, a crash
+# loop would burn through that allowance.
+ExecStartPre=-/usr/bin/docker rm -f ticket-solver-caddy
+ExecStart=/usr/bin/docker run --rm --name ticket-solver-caddy \
+  --network host \
+  -e SITE_ADDRESS=${SITE_ADDRESS} \
+  -v /etc/ticket-solver/Caddyfile:/etc/caddy/Caddyfile:ro \
+  -v caddy_data:/data \
+  -v caddy_config:/config \
+  caddy:2-alpine
+ExecStop=/usr/bin/docker stop ticket-solver-caddy
+
+[Install]
+WantedBy=multi-user.target

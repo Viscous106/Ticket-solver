@@ -5,7 +5,21 @@
 # This is the rehearsal script. If this passes, the demo works.
 
 set -euo pipefail
-BASE="http://localhost:9123"
+
+# Override to run against the deployed host:
+#   BASE=https://<eip>.nip.io ADMIN_TOKEN=... ./tests/e2e.sh
+# Both default to the local, unauthenticated setup, so a bare run is unchanged.
+BASE="${BASE:-http://localhost:9123}"
+ADMIN_TOKEN="${ADMIN_TOKEN:-}"
+
+# An array, not a ${VAR:+...} expansion: the header value contains a space, so
+# an unquoted expansion would word-split it into a malformed header. Written as
+# if/then rather than `[ -n ... ] && ...` because under `set -e` a false test as
+# the last statement would abort the script.
+AUTH=()
+if [ -n "$ADMIN_TOKEN" ]; then
+  AUTH=(-H "Authorization: Bearer $ADMIN_TOKEN")
+fi
 
 mcp() {
   curl -s -m 5 "$BASE/mcp" \
@@ -29,7 +43,8 @@ submit_via_mcp() {
 }
 
 post() {
-  curl -s -m 5 -X POST "$BASE/$1" -H "Content-Type: application/json" -d "$2"
+  curl -s -m 5 -X POST "$BASE/$1" -H "Content-Type: application/json" \
+    "${AUTH[@]}" -d "$2"
 }
 
 pass() { echo "  PASS: $1"; }

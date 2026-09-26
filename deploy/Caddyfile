@@ -1,0 +1,6 @@
+# SITE_ADDRESS is <elastic-ip-with-dashes>.nip.io, injected by the systemd
+# unit. Caddy gets a real Let's Encrypt cert for it over HTTP-01 on :80, which
+# is why the security group opens 80 as well as 443.
+{$SITE_ADDRESS} {
+	reverse_proxy 127.0.0.1:9123
+}

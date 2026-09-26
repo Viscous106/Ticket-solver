@@ -1,0 +1,11 @@
+.git
+node_modules
+docs
+tests
+deploy
+*.md
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+preflight.sh
+reset-demo.sh

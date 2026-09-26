@@ -1,0 +1,22 @@
+[Unit]
+Description=Ticket-solver mock payer (MCP + ledger)
+After=docker.service
+Requires=docker.service
+
+[Service]
+EnvironmentFile=/etc/ticket-solver/env
+Restart=always
+RestartSec=5
+
+# -p binds to 127.0.0.1 only: the app port is unreachable from off-host even
+# if a security group rule is added by mistake. Caddy reaches it over loopback.
+ExecStartPre=-/usr/bin/docker rm -f ticket-solver
+ExecStart=/usr/bin/docker run --rm --name ticket-solver \
+  -p 127.0.0.1:9123:9123 \
+  -v /var/lib/ticket-solver:/data \
+  --env-file /etc/ticket-solver/env \
+  ${IMAGE}
+ExecStop=/usr/bin/docker stop ticket-solver
+
+[Install]
+WantedBy=multi-user.target

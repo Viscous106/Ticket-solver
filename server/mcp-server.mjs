@@ -31,6 +31,17 @@ import { getClaim } from './fixtures.mjs';
 
 const PORT = process.env.PORT || 9123;
 
+// Bearer token for the ledger control endpoints. Unset - which is the case on
+// a laptop - leaves them exactly as they were: open, no header required. It is
+// set on the deployed instance, where /approve /deny /commit would otherwise
+// accept a write from anything that can reach the URL.
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+
+function authorized(req) {
+  if (!ADMIN_TOKEN) return true;
+  return req.headers.authorization === `Bearer ${ADMIN_TOKEN}`;
+}
+
 // Resolve relative to THIS file, not the process cwd. Launching the server
 // from a different directory must not silently create a second empty
 // database - during a demo that looks like "the ledger lost my row."
@@ -135,8 +146,16 @@ const server = createServer(async (req, res) => {
   // tool.approval_required and then resumes the paused call in a new turn
   // carrying user.tool_approval. There is no approval webhook.
   //
-  // These are unauthenticated, which is fine for a local demo and would not
-  // be in production - see "Honest boundaries" in the README.
+  // Unauthenticated locally, which is fine for a demo on loopback. Deployed,
+  // ADMIN_TOKEN is set and all three require a bearer token - one guard here
+  // rather than three copies inside the handlers below.
+  if (['/approve', '/deny', '/commit'].includes(url.pathname)) {
+    if (!authorized(req)) {
+      respond(res, 401, { ok: false, error: 'unauthorized' });
+      return;
+    }
+  }
+
   if (url.pathname === '/approve' && req.method === 'POST') {
     const body = await readJson(req);
     const result = ledger.approve(body.operation_id);
