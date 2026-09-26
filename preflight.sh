@@ -49,22 +49,37 @@ else
   bad "sandbox unknown (TrueForge down)"
 fi
 
-# 5. TrueForge can see our connector. Skipped when TrueForge is down, so the
-#    output names one real problem instead of three symptoms of it.
-if [ -n "$CAPS" ]; then
+# 5. TrueForge can see our connector.
+#
+#    NOTE: this is the single most expensive check, because TrueForge has to
+#    open an MCP session to our server to list tools. On a machine with no
+#    memory headroom that allocation can be what gets it killed. Set
+#    SKIP_CONNECTOR_CHECK=1 to skip it once you have confirmed it works.
+if [ -n "$CAPS" ] && [ -z "${SKIP_CONNECTOR_CHECK:-}" ]; then
   if curl -sf -m 5 http://localhost:8790/api/v1/mcp-servers/two-key-claims/tools >/dev/null 2>&1; then
     ok "connector registered in TrueForge"
   else
     bad "connector NOT registered - see AGENT-SETUP.md step 1"
   fi
+elif [ -n "$CAPS" ]; then
+  ok "connector check skipped (SKIP_CONNECTOR_CHECK=1)"
 fi
 
-# 5b. Memory headroom. TrueForge has been OOM-killed three times today with
-#     swap above 95%. A take that dies at 2:30 costs more than this check.
+# 5b. System headroom. The real failure today was CPU starvation, not RAM:
+#     four stuck editor extension hosts pegged a core each (two for 16 days)
+#     and took the load average to 82, which is what kept killing TrueForge.
+#     So check load first - it is the signal that actually predicted failure.
+LOAD=$(uptime | sed -n 's/.*load averages*: *\([0-9.]*\).*/\1/p' | cut -d. -f1)
+if [ -n "$LOAD" ] && [ "$LOAD" -gt 25 ] 2>/dev/null; then
+  bad "load average ${LOAD} - something is pegging the CPU, find it before recording"
+else
+  ok "system load (${LOAD:-?})"
+fi
+
 SWAP=$(sysctl -n vm.swapusage 2>/dev/null)
 FREE_M=$(echo "$SWAP" | sed -n 's/.*free = \([0-9.]*\)M.*/\1/p' | cut -d. -f1)
-if [ -n "$FREE_M" ] && [ "$FREE_M" -lt 2000 ] 2>/dev/null; then
-  bad "only ${FREE_M}M swap free - close other apps before recording"
+if [ -n "$FREE_M" ] && [ "$FREE_M" -lt 500 ] 2>/dev/null; then
+  bad "only ${FREE_M}M swap free - close apps before recording"
 else
   ok "memory headroom (${FREE_M:-?}M swap free)"
 fi
