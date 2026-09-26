@@ -1,4 +1,4 @@
-# Beat sheet — 3:40 target
+# Beat sheet — 4:00 target
 
 Structure: **think / decide / remember.** TrueForge does the first two. The
 third is what this repo adds.
@@ -16,9 +16,14 @@ Rules for this recording:
 
 ---
 
-## 0:00–0:20 — Open on the sandbox
+## 0:00–0:25 — Cold open on the idea, then the sandbox
 
-Screen already up, Code Mode visible with Python running.
+Say this BEFORE showing anything. Straight to camera.
+
+> "I approved the same payment twice today, and both times I was right to.
+> That's the thing I want to show you."
+
+Then the screen: Code Mode visible with Python running.
 
 > "That's an agent writing Python, in a sandbox, to work out what a denied
 > insurance claim should be resubmitted for. It's not answering a question.
@@ -31,7 +36,7 @@ Say the data boundary once:
 
 > "All synthetic. The amount mirrors a real denial; every record is fabricated."
 
-## 0:20–0:50 — Think
+## 0:25–0:55 — Think
 
 Show the agent config: local MCP connector, three tools, sandbox on,
 `submit_claim` marked as the only shielded one.
@@ -40,7 +45,7 @@ Show the agent config: local MCP connector, three tools, sandbox on,
 > an operation id on the server and fingerprints the exact payload. And it can
 > submit, which is the only one that writes, and the only one shielded."
 
-## 0:50–1:30 — The agent works
+## 0:55–1:35 — The agent works
 
 Fresh session. Paste:
 
@@ -55,7 +60,7 @@ operation id and hash.
 > correction. Preparing cannot move money. And it doesn't choose its own
 > operation id — the payer mints that."
 
-## 1:30–2:05 — Decide
+## 1:35–2:10 — Decide
 
 The approval card pauses the turn. Point at `operation_id`, `claim_id`,
 `amount`. Read the amount aloud. **Click Approve once.** Show the receipt.
@@ -64,7 +69,7 @@ The approval card pauses the turn. Point at `operation_id`, `claim_id`,
 > the write and shows me exactly what it's about to do. That pause is the
 > whole reason any of this is possible."
 
-## 2:05–2:45 — Remember, part one
+## 2:10–2:55 — Remember, part one
 
 Paste:
 
@@ -75,7 +80,15 @@ Assume that acknowledgement was lost. Safely retry the same operation.
 **Note out loud that it pauses again** — this is a feature, not a gap:
 
 > "It asks again. TrueForge doesn't hand out a reusable permission — every
-> write gets its own pause, including this retry."
+> write gets its own pause, including this retry.
+>
+> And this is the part that matters now. A person retries once in a while.
+> An agent retries as a matter of course — that's what makes it robust. So
+> the rare case just became the normal case."
+
+Deliver that last line **to camera, not to the screen.** It is the urgency
+argument and it is the only part of the video that is about the industry
+rather than about this repo.
 
 **Approve once.** Show `replay: true`, the same receipt, then:
 
@@ -87,7 +100,7 @@ sqlite3 ledger.sqlite "SELECT claim_id, amount, receipt_id FROM ledger;"
 > knowing the second card was the same operation I'd already settled. The
 > payer knew."
 
-## 2:45–3:10 — Defence in depth (the moment)
+## 2:55–3:20 — Defence in depth (the moment)
 
 Ask the agent to change the amount. **It will refuse on its own** — the
 instructions hold. Let that land, do not treat it as a failed take.
@@ -118,14 +131,22 @@ Point at `PASS: rejected tampered payload`.
 > Every one of those approvals was correct on its own. Nothing compared them.
 > The payer did."
 
-## 3:10–3:25 — The boundary, stated plainly
+## 3:20–3:45 — The boundary, stated plainly
 
-> "TrueForge's approval is allow or deny on one specific pending call. It is
+> "Idempotency isn't new. Stripe has had it for a decade. What's new is that
+> the thing retrying is an agent and the thing approving is a person, and
+> nothing connects those two layers yet.
+>
+> TrueForge's approval is allow or deny on one specific pending call. It is
 > not cryptographically bound to the arguments, and I'm not claiming it is.
 > The harness gives me the pause, the sandbox, and the trace. The payer
 > records what was approved and checks it at commit."
 
-## 3:25–3:40 — Close, then stop
+The first paragraph is **inoculation.** Any judge who knows distributed
+systems recognises this pattern in four seconds; saying so first means you
+get credit for knowing where the idea sits instead of being corrected on it.
+
+## 3:45–4:00 — Close, then stop
 
 > "An approval that only says yes stops being enough the moment the thing
 > asking can change its mind.
@@ -138,5 +159,5 @@ End. Nothing after this line.
 
 ## If something breaks mid-take
 
-Stop. `./reset-demo.sh`, `./preflight.sh`, start over. A clean 3:40 beats a
-salvaged 4:30, and you have time for several takes.
+Stop. `./reset-demo.sh`, `./preflight.sh`, start over. A clean 4:00 beats a
+salvaged 4:45, and you have time for several takes.
