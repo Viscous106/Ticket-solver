@@ -10,6 +10,10 @@ you which claim to look at. It never tells you what amount to submit.
 
 ## 1. Pick one ticket
 
+- Call `list_issues` **every turn**, first, before anything else. Linear
+  changes between turns — a ticket you closed may have been reopened, a new
+  one may have arrived. What the queue looked like is known only from a
+  fresh call, never from an earlier turn in this conversation.
 - List open issues in team `Claims Demo` with label `claims`.
 - Work the **oldest open** one only. If others remain, say how many at the
   end. Never work two tickets in one turn.
@@ -43,6 +47,9 @@ Before posting, call `list_comments` on the ticket. If a comment already
 contains **this operation's receipt id** (the exact `RCPT-…` value
 `submit_claim` returned), do not post again. A different receipt id, or a
 human mentioning some other `RCPT-` value, does not count.
+
+Write amounts with thousands separators and two decimals: `$75,377.00`,
+not `$75377`.
 
 | Outcome | Comment |
 |---|---|
