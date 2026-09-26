@@ -2,27 +2,18 @@
 
 **Bold = do. Quoted = say.**
 
-## Why the setup is different this time
-
-`e2e.sh` asserts the ledger holds exactly one row. By beat 3 the demo has
-already committed one, so running it live adds a second and prints **FAIL** -
-on camera, at the exact moment you are proving correctness.
-
-So it runs **before** recording, on a clean ledger, where it passes. You scroll
-up to that output during beat 3 instead of re-running it.
-
-## Setup - run this whole block, in order
+## Setup
 
 ```bash
-./reset-demo.sh          # clean ledger
-./tests/e2e.sh           # all pass - LEAVE THIS ON SCREEN
-./reset-demo.sh          # clean again for the demo
-./preflight.sh           # all 11 green
+./reset-demo.sh && ./preflight.sh
 ```
 
-**Do not `clear`.** The passing e2e output must stay in scrollback.
+All 11 green. Then bump the terminal font, `clear`, click **Try** for a fresh
+session, and record.
 
-**Then:** bump the terminal font, click **Try** for a fresh session, and record.
+`e2e.sh` runs **live** at beat 3. Its row assertion is scoped to the three
+operations it creates, so it passes whether or not the demo has already
+written a row. Nothing to sequence around.
 
 ---
 
@@ -102,10 +93,19 @@ up to that output during beat 3 instead of re-running it.
 > guarantee - a different model, a longer session, and that holds differently.
 > So the real question is what happens when they don't."
 
-**Switch to terminal and SCROLL UP to the e2e output from setup.**
-**Do not re-run it.** Point at one line: `PASS: rejected tampered payload`
+**Switch to terminal. Before running it:**
 
-> "Tampered payload, rejected. Zero rows written."
+> "So let's take the model out of it."
+
+**Run:** `./tests/e2e.sh` — **let it run in silence.**
+
+**Point at one line:** `PASS: rejected tampered payload`
+
+> "Tampered payload, rejected."
+
+**Then the last line of the output:** `three operations attempted, exactly one row written`
+
+> "Three operations attempted. One row written."
 
 **Pause.**
 
@@ -138,10 +138,10 @@ up to that output during beat 3 instead of re-running it.
 
 ## The six that decide the take
 
-1. **Run the setup block first.** e2e must be green in scrollback.
+1. **Reset before every take.** A dirty ledger breaks the "one row" line.
 2. **Approve exactly once** per card. Two cards.
 3. **Paste the next prompt immediately**, then talk over the run.
-4. **Point at one line** in the e2e output, never read the whole thing.
+4. **Point at two lines** in the e2e output - the tamper PASS and the final count. Never read the whole thing.
 5. **Silence while a command runs.** Two seconds of output with nobody talking
    is confidence. Filling it is nerves.
 6. **Nothing after "yes to this."**
