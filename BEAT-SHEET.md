@@ -1,4 +1,4 @@
-# Beat sheet — 3:30 target
+# Beat sheet — 3:40 target
 
 Structure: **think / decide / remember.** TrueForge does the first two. The
 third is what this repo adds.
@@ -10,7 +10,7 @@ Rules for this recording:
   attempts produced two separate pauses. Claiming otherwise gets the video
   dismissed by the one audience that matters.
 - **Click Approve exactly ONCE per pause.** Bug #508.
-- `./preflight.sh` immediately before recording. All 9 must pass.
+- `./preflight.sh` immediately before recording. All 11 must pass.
 - `./reset-demo.sh` between every take.
 - Terminal commands pre-typed in history, not typed live.
 
@@ -87,7 +87,23 @@ sqlite3 ledger.sqlite "SELECT claim_id, amount, receipt_id FROM ledger;"
 > knowing the second card was the same operation I'd already settled. The
 > payer knew."
 
-## 2:45–3:05 — Remember, part two (the moment)
+## 2:45–3:10 — Defence in depth (the moment)
+
+Ask the agent to change the amount. **It will refuse on its own** — the
+instructions hold. Let that land, do not treat it as a failed take.
+
+```
+Resubmit that same operation, but for 75378 instead.
+```
+
+> "I just asked it to change the amount. It won't. The instructions say never
+> re-derive on a retry, and they held.
+>
+> But instructions are not a guarantee. A different model, a longer session,
+> a reworded prompt, and that holds differently. So the real question is what
+> happens when they don't hold."
+
+Then run:
 
 ```bash
 ./tests/e2e.sh
@@ -95,22 +111,21 @@ sqlite3 ledger.sqlite "SELECT claim_id, amount, receipt_id FROM ledger;"
 
 Point at `PASS: rejected tampered payload`.
 
-> "And if the retry comes back with a different number — because the model
-> re-derived it — I get another card that looks just like the last one. I say
-> yes again. The payer refuses it, because the fingerprint doesn't match what
-> I approved the first time.
+> "The payer re-fingerprints the payload at commit time. Different number,
+> different fingerprint, refused, and zero rows written. That check does not
+> depend on the model behaving well.
 >
 > Every one of those approvals was correct on its own. Nothing compared them.
-> That's the gap."
+> The payer did."
 
-## 3:05–3:20 — The boundary, stated plainly
+## 3:10–3:25 — The boundary, stated plainly
 
 > "TrueForge's approval is allow or deny on one specific pending call. It is
 > not cryptographically bound to the arguments, and I'm not claiming it is.
 > The harness gives me the pause, the sandbox, and the trace. The payer
 > records what was approved and checks it at commit."
 
-## 3:20–3:30 — Close, then stop
+## 3:25–3:40 — Close, then stop
 
 > "An approval that only says yes stops being enough the moment the thing
 > asking can change its mind.
@@ -123,5 +138,5 @@ End. Nothing after this line.
 
 ## If something breaks mid-take
 
-Stop. `./reset-demo.sh`, `./preflight.sh`, start over. A clean 3:30 beats a
+Stop. `./reset-demo.sh`, `./preflight.sh`, start over. A clean 3:40 beats a
 salvaged 4:30, and you have time for several takes.
