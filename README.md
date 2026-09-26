@@ -149,7 +149,14 @@ Ledger rows are immutable: `UPDATE` and `DELETE` triggers reject mutation.
 
 ## Run it
 
-Requires Node 22.14+.
+Requires Node 22.14+ (tested on Node 22, 24 and 26). `.nvmrc` pins 22 for
+`nvm use`.
+
+`better-sqlite3` is a native module. Its install script is allow-listed in
+`package.json` (`allowScripts`), so newer npm versions that block install
+scripts by default still fetch or build its binary. If no prebuilt binary
+matches your platform it compiles, which needs `python3`, `make` and a C++
+compiler.
 
 ```bash
 npm install
@@ -212,6 +219,21 @@ that does not.
   the payer would authenticate its caller and accept an approval only from the
   harness. That is not built here.
 - Nothing in this repository constitutes medical, billing, or legal advice.
+
+## AI assistants used
+
+Disclosed as the hackathon rules require.
+
+- **Claude Code (Anthropic)** — pair-programming on the server, tests,
+  scripts, deployment files and documentation.
+- **OpenAI Codex** — read-only adversarial review of the README against the
+  code, and Q&A drilling before the demo.
+- **OpenAI model via TrueForge** — the agent itself at runtime. It is the
+  product being demonstrated, not a build tool.
+
+The architecture — server-minted operation id, payload hash bound at prepare
+and re-verified at commit, one shielded write tool — is ours, and we can walk
+through it.
 
 ## Licence
 
