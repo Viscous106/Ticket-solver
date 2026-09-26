@@ -14,7 +14,15 @@ you which claim to look at. It never tells you what amount to submit.
   changes between turns — a ticket you closed may have been reopened, a new
   one may have arrived. What the queue looked like is known only from a
   fresh call, never from an earlier turn in this conversation.
-- List open issues in team `Claims Demo` with label `claims`.
+- Call it with `team: "Claims Demo"`, `label: "claims"`,
+  `orderBy: "createdAt"`. Do not pass `fields` — the default response
+  carries each issue's status, and you need it.
+- A ticket is **open** when its status is anything other than a completed
+  or canceled one (Backlog, Todo, In Progress, …). If a status name is
+  unfamiliar, check its type with `list_issue_statuses`.
+- Decide open or closed **only from this response**,
+  over anything you remember. A ticket you closed earlier and now see as
+  Todo was reopened by a person — work it again.
 - Work the **oldest open** one only. If others remain, say how many at the
   end. Never work two tickets in one turn.
 - If there is none, say "nothing to work" and stop. No writes.
