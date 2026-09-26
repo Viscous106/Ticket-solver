@@ -202,7 +202,11 @@ that does not.
   hand out reusable permissions, and this repo does not claim it does. What it
   does not do is relate one approval to another — that is the gap being closed.
 - **TrueForge's approval is not cryptographically bound to arguments.** The
-  binding is enforced here, in the payer, at commit time.
+  binding is enforced here, in the payer, at commit time. That placement is
+  deliberate rather than a workaround: relating one approval to another is an
+  application-side concern, confirmed as such by TrueFoundry before this was
+  recorded. The harness authorizes calls, which is the right job for it. The
+  memory belongs where the consequence lands.
 - **The HTTP endpoints are unauthenticated and the MCP handler records its own
   approval.** Anything that can reach the port can call them. In production
   the payer would authenticate its caller and accept an approval only from the

@@ -134,17 +134,25 @@ Point at `PASS: rejected tampered payload`.
 ## 3:20–3:45 — The boundary, stated plainly
 
 > "Idempotency isn't new. Stripe has had it for a decade. What's new is that
-> the thing retrying is an agent and the thing approving is a person, and
-> nothing connects those two layers yet.
+> the thing retrying is an agent and the thing approving is a person.
 >
-> TrueForge's approval is allow or deny on one specific pending call. It is
-> not cryptographically bound to the arguments, and I'm not claiming it is.
-> The harness gives me the pause, the sandbox, and the trace. The payer
-> records what was approved and checks it at commit."
+> This is an application-side concern, not a harness one. The harness
+> authorizes calls, and that is the right job for it. So I built the memory
+> where the consequence lands: in the payer.
+>
+> TrueForge gives me the pause, the sandbox, and the trace. The payer records
+> what was approved and checks it at commit."
 
-The first paragraph is **inoculation.** Any judge who knows distributed
-systems recognises this pattern in four seconds; saying so first means you
-get credit for knowing where the idea sits instead of being corrected on it.
+Two things are doing work here.
+
+**Inoculation.** Any judge who knows distributed systems recognises this
+pattern in four seconds; naming it first means you get credit for knowing
+where the idea sits instead of being corrected on it.
+
+**Posture.** The middle paragraph is a design decision, not a hedge —
+confirmed app-side by Cy from TrueFoundry before recording. If anyone asks
+why this is not in the harness: "I asked. It's app-side. That's where I put
+it."
 
 ## 3:45–4:00 — Close, then stop
 
