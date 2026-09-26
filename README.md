@@ -32,6 +32,53 @@ TrueFoundry Agent Harness Hackathon, 2026-09-19.
 name, record, and identifier in this repository is fabricated. There is no
 patient data of any kind.
 
+## Solution writeup
+
+*The seven required points. Everything below this section is the same
+material at length.*
+
+**The problem.** Idempotency assumes a retry replays the same bytes. An LLM
+re-derives instead, so a key on the operation alone commits the *wrong
+payload* under the *right key*. TrueForge pauses every shielded call,
+retries included, but nothing relates one yes to another: the approvals are
+individually correct and collectively blind.
+
+**What the agent reaches.** One MCP connector, `two-key-claims`, with three
+tools — `get_claim` (read), `prepare_resubmission` (read; mints a
+server-side `operation_id` and a SHA-256 hash of the exact payload), and
+`submit_claim` (the only write) — plus TrueForge's Python sandbox, where it
+derives the corrected amount and shows its arithmetic.
+
+**Where it stops.** At `submit_claim`, the shielded tool. The agent may
+prepare a $75,377 correction alone; it may not commit one. Committing needs
+a human decision *and* a payload still matching what that human was shown.
+
+**The architecture.** TrueForge agent → MCP → a Node mock payer
+(`server/mcp-server.mjs`) over a SQLite ledger (`server/ledger.mjs`; tables
+`operations` and `ledger`, UPDATE and DELETE triggers rejecting mutation).
+At commit the payer re-hashes the incoming arguments against the approved
+hash, then checks whether the operation already settled — if so it replays
+the original receipt instead of writing a second row.
+
+**How TrueForge was used.** It supplies the agent loop, MCP discovery and
+invocation, the sandbox, the pause before a shielded tool, the allow/deny
+decision, session persistence, and the event trace.
+`require_approval_for_tools: ["submit_claim"]` is the whole harness-side
+configuration. This repo adds one thing: the argument invariant.
+
+**Real versus mocked.** Real: TrueForge and its pause, the MCP transport,
+the sandbox arithmetic, the SQLite ledger and its constraints, and the four
+scenarios `tests/e2e.sh` runs end to end. Mocked: the payer, which has no
+adjudication logic — the fixture supplies the corrected amount. All data is
+synthetic; no money moves.
+
+**Known limits.** TrueForge 0.2.0's approval is `allow`/`deny` against a
+pending call, not a binding over argument values, so the payload check lives
+in the payer at commit time rather than in the harness. The HTTP endpoints
+are unauthenticated and the MCP handler records its own approval; in
+production the payer would authenticate its caller and accept an approval
+only from the harness. That is not built here.
+
 ## The problem
 
 An idempotency key solves the classic retry: same key, same request, one
