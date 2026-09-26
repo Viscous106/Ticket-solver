@@ -1,7 +1,16 @@
 # Ticket-solver
 
-**When a human client retries, it replays. When an agent retries, it
-regenerates.** That is the whole problem this repository is about.
+When you order at a restaurant, the waiter reads the order back. You say yes.
+That is so you get what you agreed to, not what he remembers on the second
+trip to the kitchen.
+
+Software never needed that. A computer retrying a payment sends the identical
+bytes every time, so approval could be a yes-or-no button and nothing was
+lost. **An agent does not replay. It re-derives.** It can come back with a
+different number, holding your approval, and be entirely sincere that it is
+the same request.
+
+So the yes has to become specific. Not *yes, go ahead*. **Yes — to this.**
 
 An agent may prepare a $75,377 claim correction on its own. It may not commit
 one on its own. Committing takes two things: a human decision, and a payload
