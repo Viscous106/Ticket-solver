@@ -77,3 +77,61 @@ arithmetic, then submit the correction for approval.
 - Connectors and skills cannot be fully deleted (#494/#498). Name things
   correctly the first time.
 - Keep the turn short. See compaction note above.
+
+## 6. Linear agent (`ticket-solver-linear`)
+
+A second agent. `ticket-solver` above is left exactly as it is.
+
+**Start TrueForge so it can reach the local payer.** TrueForge 0.2.x blocks
+outbound calls to `localhost` by default (`Outbound URL blocked for host
+"localhost"`). Allow only that host, rather than turning the guard off:
+
+```bash
+OUTBOUND_URL_ALLOWED_HOSTS='["localhost"]' npx @truefoundry/trueforge@0.2.1 --port 8790
+```
+
+**Connector.** Settings → Connectors → Linear (`https://mcp.linear.app/mcp`),
+named `linear`. OAuth via the in-chat Connect button, or header auth with a
+Linear API key **scoped to the Claims Demo team**. The key lives only in
+TrueForge.
+
+**Linear.** Team `Claims Demo`, label `claims`, one ticket per rehearsal:
+`CLM-75377 denied — A8 ungroupable DRG`, description
+`Synthetic claim CLM-75377 was denied with code A8 (ungroupable DRG). Please resubmit the correction.`
+
+**Create.** The prompt and both skills are assembled by a script (skills are
+inlined because the repo is private):
+
+```bash
+node agents/build-linear-agent.mjs | curl -s -X POST \
+  http://localhost:8790/api/v1/agents -H 'Content-Type: application/json' -d @-
+```
+
+A `409` means the name already exists. Names cannot be reused; inspect it
+with `GET /api/v1/agents?agent_name=ticket-solver-linear` instead of
+retrying.
+
+**Tools.** Six of Linear's 68, plus the three claims tools. Everything else
+from Linear is not loaded.
+
+| Tool | Approval |
+|---|---|
+| `list_issues`, `get_issue`, `list_comments`, `list_issue_statuses` | no |
+| `save_comment`, `save_issue` | **yes** |
+| `get_claim`, `prepare_resubmission` | no |
+| `submit_claim` | **yes** |
+
+Linear annotates `save_comment` and `save_issue` as destructive, so the
+default `@destructive` policy would gate them anyway. They are named
+explicitly so the policy does not depend on the server's annotations.
+
+Check: the UI reads **9 selected · 3 need approval**.
+
+**Task prompt.**
+
+```
+Work the oldest open claims ticket in Linear.
+```
+
+Expect three pauses on the happy path: `submit_claim`, `save_comment`,
+`save_issue`. Click Approve once each.
