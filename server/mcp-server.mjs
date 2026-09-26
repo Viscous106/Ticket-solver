@@ -1,23 +1,24 @@
 // MCP server over Streamable HTTP for TrueForge to connect to.
 //
-// Two tools:
-//   get_claim      - read-only, returns the fixture claim.
-//   submit_claim   - WRITE. This is the tool TrueForge's approval config
-//                    should gate with require_approval_for_tools. It does
-//                    NOT write directly - it calls propose() on the ledger,
-//                    which mints operation_id + payload_hash and returns
-//                    them. The actual commit happens through the separate
-//                    /commit HTTP endpoint below, called only after a human
-//                    approves in TrueForge and the operation_id + original
-//                    payload are replayed back.
+// Three tools, split so that the shielded one is the one that moves money:
 //
-// Why two tools aren't enough and there's a plain HTTP endpoint too:
-// TrueForge's approval only gates the MCP tool call itself
-// (submit_claim being invoked). It does not gate what happens to the
-// operation afterward. So submit_claim's job is to PROPOSE (safe, no
-// money moves), and the actual commit is a second step this endpoint
-// exposes directly - the piece that stands in for "the human's approval,
-// bound to the exact payload."
+//   get_claim              read-only. No approval.
+//   prepare_resubmission   mints a server-side operation_id and records a
+//                          hash of the exact payload. CANNOT commit, so it
+//                          needs no approval.
+//   submit_claim           WRITE. The only shielded tool. TrueForge pauses
+//                          the turn here and shows the reviewer the exact
+//                          arguments. On release, the payer re-hashes the
+//                          payload and refuses anything that no longer
+//                          matches what was prepared.
+//
+// Why the hash check lives here and not in the harness: TrueForge 0.2.0's
+// approval decision is only allow/deny against a pending call. The reviewer
+// sees the arguments, but the decision does not carry them. With a
+// deterministic client that gap is harmless - the arguments cannot change
+// between approval and execution. With an agent, which re-derives its
+// arguments on retry, it is the entire problem. So the payer records what
+// was approved and verifies it at commit time.
 
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
@@ -95,13 +96,12 @@ function buildMcpServer() {
       inputSchema: { operation_id: z.string(), claim_id: z.string(), amount: z.number() },
     },
     async ({ operation_id, claim_id, amount }) => {
-      // Approval is recorded here because the call reaching this point IS the
-      // human's release of it: TrueForge would not have delivered it otherwise.
-      const approval = ledger.approve(operation_id);
-      if (!approval.ok && approval.reason !== 'already_approved') {
-        // An operation that was denied, already committed, or unknown still
-        // falls through to submit() below, which returns the precise reason.
-      }
+      // The call reaching this point IS the human's release of it - TrueForge
+      // would not have delivered it otherwise - so record the approval here.
+      // A failure is deliberately not short-circuited: an operation that was
+      // denied, already committed, or unknown falls through to submit(),
+      // which returns the precise reason rather than a generic one.
+      ledger.approve(operation_id);
 
       const result = ledger.submit(operation_id, { claim_id, amount });
       return {
@@ -173,7 +173,7 @@ function respond(res, status, obj) {
 }
 
 server.listen(PORT, () => {
-  console.log(`two-key MCP server on http://localhost:${PORT}/mcp`);
+  console.log(`Ticket-solver MCP server on http://localhost:${PORT}/mcp`);
   console.log(`ledger control: POST /approve /deny /commit  (body: {operation_id, payload?, reason?})`);
 });
 

@@ -8,7 +8,7 @@ from memory at 3 PM.
 Start the mock payer first:
 
 ```bash
-cd two-key
+cd Ticket-solver
 node server/mcp-server.mjs     # http://localhost:9123/mcp
 ```
 

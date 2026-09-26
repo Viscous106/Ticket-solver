@@ -1,8 +1,11 @@
-# Two-Key
+# Ticket-solver
+
+**When a human client retries, it replays. When an agent retries, it
+regenerates.** That is the whole problem this repository is about.
 
 An agent may prepare a $75,377 claim correction on its own. It may not commit
-one on its own. Committing takes two keys: a human decision, and a payload
-that still matches what was prepared.
+one on its own. Committing takes two things: a human decision, and a payload
+that still matches what that human was shown.
 
 Built on [TrueForge](https://github.com/truefoundry/trueforge) for the
 TrueFoundry Agent Harness Hackathon, 2026-09-19.
@@ -14,20 +17,47 @@ patient data of any kind.
 ## The problem
 
 An idempotency key solves the classic retry: same key, same request, one
-effect. Stripe shipped that in 2015.
+effect. Stripe shipped that in 2015. It rests on an assumption nobody writes
+down, because for thirty years it was free:
 
-Agents break the assumption underneath it. When a human client retries, it
-replays the same bytes. **When an agent retries, the model regenerates its
-arguments** — and may produce a different amount. An idempotency key keyed on
-the operation alone will happily commit the wrong payload under the right key.
+> **A retry is a replay of the same request.**
 
-So the second key binds two things that must both hold:
+That held because the thing retrying was deterministic code. Same inputs in,
+same bytes out.
+
+An LLM retrying is not a replay. It is a re-derivation. The model may produce
+different arguments and still believe it is doing the same task. So an
+idempotency key keyed on the operation alone will happily commit the *wrong
+payload* under the *right key*.
+
+Nothing is broken here. The assumption was quietly invalidated by a new kind
+of client.
+
+The same gap shows up in the approval itself. A reviewer sees the arguments on
+screen, but an allow/deny decision records only that the call was permitted —
+not what it contained. With a deterministic client that gap is harmless,
+because the arguments cannot change between approval and execution. With an
+agent it is the entire problem.
+
+So approval here binds two things that must both hold:
 
 1. an `operation_id` the model cannot mint (server-generated), and
 2. a SHA-256 hash of the exact payload that was prepared.
 
 Approval authorizes **one payload**. A retry carrying different arguments
 fails the hash check even though the operation id is correct.
+
+### Before and after
+
+```
+before                                  after
+------                                  -----
+agent: send $75,377                     agent: prepare $75,377
+human: APPROVE      (approves the act)  human: APPROVE   (approves this payload)
+agent: [timeout, retries]               agent: [timeout, retries]
+agent: send $95,000 (re-derived)        agent: send $95,000
+system: approved -> PAYS $95,000        system: hash mismatch -> REFUSED
+```
 
 ## What TrueForge does, and what this repo does
 
